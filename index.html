@@ -9,18 +9,18 @@
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     :root{
-      --cream:#FBF8F2;
-      --sand:#F1EADD;
-      --sand-deep:#E7DCC8;
-      --ink:#26302A;
-      --ink-soft:#4A554E;
-      --forest:#2E4A3B;
-      --forest-deep:#1C2C24;
-      --sage:#6E8B78;
-      --gold:#B8935A;
-      --gold-soft:#D8BE93;
-      --line:rgba(46,74,59,.14);
-      --shadow:0 18px 50px -24px rgba(28,44,36,.45);
+      --cream:#F8F5FC;
+      --sand:#EFE8F8;
+      --sand-deep:#E3D7F3;
+      --ink:#2A2138;
+      --ink-soft:#544A63;
+      --forest:#4E2E82;
+      --forest-deep:#241348;
+      --sage:#9B7FC4;
+      --gold:#B8862B;
+      --gold-soft:#F0CE72;
+      --line:rgba(78,46,130,.15);
+      --shadow:0 18px 50px -24px rgba(36,19,72,.45);
       --serif:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
       --sans:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     }
@@ -53,7 +53,7 @@
       border-bottom:1px solid transparent;
       transition:border-color .4s,box-shadow .4s;
     }
-    header.bar.scrolled{border-bottom-color:var(--line);box-shadow:0 6px 24px -18px rgba(28,44,36,.5)}
+    header.bar.scrolled{border-bottom-color:var(--line);box-shadow:0 6px 24px -18px rgba(36,19,72,.5)}
     .bar .logo{font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--forest)}
     .bar .logo span{color:var(--gold)}
     .bar .bar-cta{
@@ -67,8 +67,8 @@
     .hero{
       min-height:100svh;display:flex;align-items:center;
       background:
-        radial-gradient(120% 80% at 50% -10%, rgba(110,139,120,.28), transparent 60%),
-        linear-gradient(180deg,#1C2C24 0%,#25382E 55%,#2E4A3B 100%);
+        radial-gradient(120% 80% at 50% -10%, rgba(160,120,210,.32), transparent 60%),
+        linear-gradient(180deg,#221145 0%,#2E1A52 55%,#3E2472 100%);
       color:#F3EFE6;text-align:center;overflow:hidden;
       padding:120px 0 90px;
     }
@@ -104,20 +104,20 @@
     .hero .free-badge .dot{width:7px;height:7px;border-radius:50%;background:#7FD1A0;box-shadow:0 0 0 4px rgba(127,209,160,.25)}
     .btn{
       display:inline-block;text-decoration:none;font-weight:700;font-size:17px;
-      color:var(--forest-deep);background:linear-gradient(180deg,#E9D4A6,#D8BE93);
+      color:#2A1A47;background:linear-gradient(180deg,#F6DD8C,#E7B84D);
       padding:18px 46px;border-radius:999px;margin-top:26px;
-      box-shadow:0 16px 34px -14px rgba(184,147,90,.7);
+      box-shadow:0 16px 34px -14px rgba(214,169,60,.7);
       transition:transform .2s,box-shadow .3s;
     }
-    .btn:hover{transform:translateY(-2px);box-shadow:0 22px 40px -14px rgba(184,147,90,.85)}
-    .btn.forest{color:#fff;background:linear-gradient(180deg,#37543F,#233A2D);box-shadow:0 16px 34px -14px rgba(28,44,36,.7)}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 22px 40px -14px rgba(214,169,60,.9)}
+    .btn.forest{color:#fff;background:linear-gradient(180deg,#5B3A8C,#3E2472);box-shadow:0 16px 34px -14px rgba(36,19,72,.7)}
     .hero .meta{margin-top:22px;font-size:14px;color:rgba(243,239,230,.6)}
 
     /* ---------- section shells ---------- */
     .band{padding:96px 0}
     .band.sand{background:var(--sand)}
     .band.sand-deep{background:var(--sand-deep)}
-    .band.forest{background:linear-gradient(180deg,#243A2E,#1C2C24);color:#F1EDE3}
+    .band.forest{background:linear-gradient(180deg,#2E1A52,#221145);color:#F1EDE3}
     .eyebrow{
       display:block;text-align:center;font-size:13px;letter-spacing:.2em;
       font-weight:700;color:var(--gold);margin-bottom:18px;
@@ -148,7 +148,7 @@
     .check{
       display:flex;gap:15px;align-items:flex-start;background:var(--cream);
       border:1px solid var(--line);border-radius:16px;padding:18px 22px;
-      box-shadow:0 10px 30px -22px rgba(28,44,36,.4);
+      box-shadow:0 10px 30px -22px rgba(36,19,72,.4);
     }
     .check .ic{
       flex:0 0 26px;height:26px;border-radius:50%;background:var(--forest);
@@ -180,7 +180,7 @@
       border:1px solid rgba(216,190,147,.3);border-radius:14px;
       padding:14px 18px;font-weight:600;font-size:16px;color:#F1EDE3;
     }
-    .flow .node.star{background:linear-gradient(180deg,#E9D4A6,#D8BE93);color:var(--forest-deep);border-color:transparent;font-weight:800}
+    .flow .node.star{background:linear-gradient(180deg,#F6DD8C,#E7B84D);color:#2A1A47;border-color:transparent;font-weight:800}
     .flow .arrow{color:var(--gold-soft);font-size:18px;line-height:1;padding:9px 0}
     .flow-cap{text-align:center;margin-top:34px;font-size:16px;color:rgba(241,237,227,.82);line-height:1.8}
     .flow-cap b{color:#fff}
@@ -189,7 +189,7 @@
     .curri{display:grid;gap:18px;max-width:680px;margin:0 auto}
     .part{
       background:var(--cream);border:1px solid var(--line);border-radius:20px;
-      padding:30px 30px;box-shadow:0 14px 40px -28px rgba(28,44,36,.5);
+      padding:30px 30px;box-shadow:0 14px 40px -28px rgba(36,19,72,.5);
       position:relative;overflow:hidden;
     }
     .part::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(var(--sage),var(--forest))}
@@ -215,10 +215,10 @@
     }
     .prof-photo{
       flex:0 0 120px;width:120px;height:120px;border-radius:50%;
-      background:radial-gradient(circle at 40% 35%,#6E8B78,#2E4A3B);
+      background:radial-gradient(circle at 40% 35%,#9B7FC4,#4E2E82);
       display:grid;place-items:center;color:#F1EDE3;font-size:13px;
       text-align:center;font-weight:600;letter-spacing:.05em;line-height:1.5;
-      box-shadow:0 12px 30px -14px rgba(28,44,36,.6);
+      box-shadow:0 12px 30px -14px rgba(36,19,72,.6);
     }
     .prof-id{flex:1;min-width:220px}
     .prof-id .role{font-size:13px;letter-spacing:.14em;font-weight:700;color:var(--gold);margin-bottom:8px}
@@ -245,7 +245,7 @@
     .revs{display:grid;gap:20px;max-width:720px;margin:0 auto}
     .rev{
       background:var(--cream);border:1px solid var(--line);border-radius:20px;
-      padding:28px 30px;box-shadow:0 14px 40px -30px rgba(28,44,36,.5);
+      padding:28px 30px;box-shadow:0 14px 40px -30px rgba(36,19,72,.5);
     }
     .rev .stars{color:var(--gold);letter-spacing:3px;font-size:15px;margin-bottom:14px}
     .rev .body{font-size:16.5px;color:var(--ink);line-height:1.85;margin-bottom:18px}
@@ -253,7 +253,7 @@
     .rev .who{display:flex;align-items:center;gap:12px}
     .rev .who .av{
       width:42px;height:42px;border-radius:50%;flex:0 0 auto;
-      background:radial-gradient(circle at 40% 35%,#8AA894,#3A5A45);
+      background:radial-gradient(circle at 40% 35%,#B29AD9,#5B3A8C);
       color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px;
     }
     .rev .who .info{font-size:14px;line-height:1.5}
@@ -272,8 +272,8 @@
     /* final CTA */
     .final{
       background:
-        radial-gradient(120% 90% at 50% 0%, rgba(110,139,120,.3), transparent 55%),
-        linear-gradient(180deg,#1C2C24,#25382E);
+        radial-gradient(120% 90% at 50% 0%, rgba(160,120,210,.34), transparent 55%),
+        linear-gradient(180deg,#221145,#2E1A52);
       color:#F3EFE6;text-align:center;padding:100px 0;
     }
     .final h2{font-size:clamp(26px,5vw,38px);font-weight:800;line-height:1.4;color:#fff;margin-bottom:20px}
@@ -490,28 +490,29 @@
   <!-- ===== INSTRUCTOR ===== -->
   <section class="band sand-deep">
     <div class="wrap">
-      <span class="eyebrow reveal">강사 소개</span>
-      <h2 class="sec reveal">웰니스 현장을 아는 사람이<br />전하는 이야기</h2>
-      <div class="divider reveal"></div>
-      <div class="prof reveal" style="margin-top:14px">
-        <div class="prof-top">
-          <div class="prof-photo">강사 사진<br />(교체 예정)</div>
-          <div class="prof-id">
-            <div class="role">힐링뉴스 대표 · 메디에이치(MEDI.H) 대표</div>
-            <h3>오혜선 <span>대표</span></h3>
-            <p class="tagline">웰니스 시장의 언어와 데이터 기반 마케팅을 모두 아는, 국내에서 드문 웰니스 특화 마케팅 교육자.</p>
+      <span class=”eyebrow reveal”>강사 소개</span>
+      <h2 class=”sec reveal”>마케팅 현장에서 뛰고 있으면서<br />동시에 웰니스 세계를 깊이 이해하는 사람</h2>
+      <div class=”divider reveal”></div>
+      <div class=”prof reveal” style=”margin-top:14px”>
+        <div class=”prof-top”>
+          <div class=”prof-photo”>강사 사진<br />(교체 예정)</div>
+          <div class=”prof-id”>
+            <div class=”role”>힐링뉴스 대표 · 메디에이치(MEDI.H) 대표</div>
+            <h3>오혜선 대표 <span>(Sriya)</span></h3>
+            <p class=”tagline”>웰니스 시장의 언어와 데이터 기반 마케팅을 모두 아는, 국내에서 드문 웰니스 특화 마케팅 교육자.</p>
           </div>
         </div>
-        <div class="prof-body">
-          <ul class="cred">
-            <li><span class="k">언론</span><span class="v">명상·웰니스 전문 언론사 <b>&lt;힐링뉴스&gt;</b> 대표 — 국내 웰니스·명상 정보를 가장 폭넓게 보유</span></li>
-            <li><span class="k">마케팅</span><span class="v">메디컬·헬스케어 전문 마케팅 기획사 <b>메디에이치(MEDI.H)</b> 대표 · 기업 브랜드/SNS 마케팅 6년</span></li>
-            <li><span class="k">교육</span><span class="v">4년간 <b>1,000명 이상</b>의 수강생을 직접 교육한 실전 마케팅 교육자</span></li>
-            <li><span class="k">저술</span><span class="v">저서 <b>6권</b> 출간 · 국가 등록 연구자</span></li>
-            <li><span class="k">공공</span><span class="v">정보통신산업진흥원(NIPA) 현직 <b>전문평가위원</b></span></li>
+        <div class=”prof-body”>
+          <ul class=”cred”>
+            <li><span class=”k”>언론</span><span class=”v”>명상·웰니스 전문 언론사 <b>&lt;힐링뉴스&gt;</b> 대표</span></li>
+            <li><span class=”k”>자격</span><span class=”v”><b>초프라(Chopra) 국제 코치</b> 자격 취득 · 미국 <b>NBHWC</b> 과정 수료 (National Board for Health &amp; Wellness Coaching)</span></li>
+            <li><span class=”k”>마케팅</span><span class=”v”>메디컬·헬스케어 마케팅 기획사 <b>MEDI.H</b> 대표 · 기업 마케팅 6년</span></li>
+            <li><span class=”k”>교육</span><span class=”v”>4년간 <b>1,000명 이상</b>을 직접 교육한 실전 마케팅 교육자</span></li>
+            <li><span class=”k”>저술</span><span class=”v”>저서 <b>5권</b> 출간 · 국가연구자 등록 (전 과학기술인)</span></li>
+            <li><span class=”k”>공공</span><span class=”v”>정보통신산업진흥원(NIPA) 현직 <b>전문평가위원</b></span></li>
           </ul>
         </div>
-        <p class="prof-quote">“웰니스 현장을 모르면서 마케팅 이론만 가르치지 않습니다. 저는 실제로 언론사와 마케팅 회사를 운영하며, 웰니스 고객이 무엇에 마음을 여는지 매일 지켜봐 왔습니다. 그 감각을, 이 자리에서 나눕니다.”</p>
+        <p class=”prof-quote”>”웰니스 현장을 모르면서 마케팅 이론만 가르치지 않습니다. 저는 실제로 언론사와 마케팅 회사를 운영하며, 고객이 무엇에 마음을 여는지 매일 지켜봐 왔습니다. 또한 웰니스 전문가들의 고뇌를 직관하고, 그 고뇌를 덜어드리고자 이 과정을 개설했습니다.”</p>
       </div>
     </div>
   </section>
@@ -542,7 +543,7 @@
       <div class="stat-row reveal">
         <div class="stat"><div class="num">1,000<span class="plus">+</span></div><div class="lab">누적 수강생</div></div>
         <div class="stat"><div class="num">4<span class="plus">년</span></div><div class="lab">웰니스 특화 교육</div></div>
-        <div class="stat"><div class="num">6<span class="plus">권</span></div><div class="lab">강사 저서 출간</div></div>
+        <div class="stat"><div class="num">5<span class="plus">권</span></div><div class="lab">강사 저서 출간</div></div>
       </div>
     </div>
   </section>
