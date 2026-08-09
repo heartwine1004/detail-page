@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유튜브 다운로드 & 편집기</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #191c23; --line: #2a2e37; --fg: #e6e8eb;
+    --muted: #9aa0a6; --accent: #ff4d4f; --accent2: #4d7cff; --ok: #29cc7a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 80px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; margin-bottom: 18px;
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input[type=text], select, input[type=number] {
+    background: #0f1115; border: 1px solid var(--line); color: var(--fg);
+    border-radius: 9px; padding: 11px 12px; font-size: 14px; outline: none;
+  }
+  input[type=text] { flex: 1; min-width: 220px; }
+  input:focus, select:focus { border-color: var(--accent2); }
+  button {
+    background: var(--accent2); color: #fff; border: 0; border-radius: 9px;
+    padding: 11px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity .15s;
+  }
+  button:hover { opacity: .88; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.ghost { background: #262a33; }
+  button.accent { background: var(--accent); }
+  .hidden { display: none; }
+  .meta { display: flex; gap: 16px; align-items: center; }
+  .meta img { width: 160px; border-radius: 10px; }
+  .meta .title { font-weight: 600; }
+  .meta .muted { color: var(--muted); font-size: 13px; }
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .op { border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
+  .op h3 { font-size: 15px; margin: 0 0 10px; }
+  .status {
+    font-size: 13px; padding: 10px 12px; border-radius: 9px; margin-top: 12px;
+    background: #14171d; border: 1px solid var(--line); white-space: pre-wrap;
+  }
+  .status.err { border-color: var(--accent); color: #ff9a9b; }
+  .status.ok { border-color: var(--ok); color: #7fe6b0; }
+  a.dl { color: var(--ok); font-weight: 600; text-decoration: none; }
+  a.dl:hover { text-decoration: underline; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid #fff5;
+    border-top-color: #fff; border-radius: 50%; animation: r .7s linear infinite;
+    vertical-align: -2px; margin-right: 6px; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎬 유튜브 다운로드 & 편집기</h1>
+  <div class="sub">링크를 붙여넣고 다운로드한 뒤, 자르기 · 화질 변환 · 오디오 추출 · 속도 조절을 할 수 있어요.</div>
+
+  <!-- 1. 링크 입력 -->
+  <div class="card">
+    <div class="row">
+      <input id="url" type="text" placeholder="https://youtu.be/... 또는 유튜브 주소">
+      <button id="btn-info" onclick="fetchInfo()">정보 조회</button>
+    </div>
+    <div class="hint">본인이 권리를 가졌거나 이용이 허용된 영상만 내려받으세요. (YouTube 약관·저작권 준수)</div>
+    <div id="info-status" class="status hidden"></div>
+  </div>
+
+  <!-- 2. 정보 + 다운로드 -->
+  <div id="info-card" class="card hidden">
+    <div class="meta">
+      <img id="thumb" src="" alt="">
+      <div>
+        <div class="title" id="title"></div>
+        <div class="muted"><span id="uploader"></span> · <span id="duration"></span></div>
+        <div class="row" style="margin-top:12px">
+          <select id="quality"></select>
+          <button class="accent" id="btn-dl" onclick="download()">다운로드</button>
+        </div>
+      </div>
+    </div>
+    <div id="dl-status" class="status hidden"></div>
+  </div>
+
+  <!-- 3. 편집 -->
+  <div id="edit-card" class="card hidden">
+    <h3 style="margin-top:0">✂️ 편집</h3>
+    <div class="hint" style="margin-bottom:16px">현재 파일: <span id="current-file" style="color:var(--fg)"></span></div>
+
+    <div class="op">
+      <h3>구간 자르기</h3>
+      <div class="row">
+        <div><label>시작 (예: 0:10)</label><input type="text" id="trim-start" value="0:00" style="width:120px"></div>
+        <div><label>끝 (예: 1:30)</label><input type="text" id="trim-end" value="0:30" style="width:120px"></div>
+        <div style="display:flex;align-items:flex-end"><button onclick="edit('trim')">자르기</button></div>
+      </div>
+    </div>
+
+    <div class="op">
+      <h3>화질 / 포맷 변환</h3>
+      <div class="row">
+        <div><label>화질</label>
+          <select id="conv-height">
+            <option value="">원본 유지</option>
+            <option value="1080">1080p</option>
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </div>
+        <div><label>포맷</label>
+          <select id="conv-format"><option>mp4</option><option>webm</option><option>mkv</option></select>
+        </div>
+        <div style="display:flex;align-items:flex-end"><button onclick="edit('convert')">변환</button></div>
+      </div>
+    </div>
+
+    <div class="op">
+      <h3>오디오 추출</h3>
+      <div class="row">
+        <div><label>포맷</label>
+          <select id="audio-format"><option>mp3</option><option>m4a</option><option>wav</option></select>
+        </div>
+        <div style="display:flex;align-items:flex-end"><button onclick="edit('audio')">오디오 추출</button></div>
+      </div>
+    </div>
+
+    <div class="op">
+      <h3>재생 속도</h3>
+      <div class="row">
+        <div><label>배수 (예: 1.5, 0.5)</label><input type="number" id="speed-factor" value="1.5" step="0.1" min="0.1" style="width:120px"></div>
+        <div style="display:flex;align-items:flex-end"><button onclick="edit('speed')">속도 변경</button></div>
+      </div>
+    </div>
+
+    <div id="edit-status" class="status hidden"></div>
+  </div>
+</div>
+
+<script>
+let currentFile = null;
+
+function setStatus(el, msg, kind) {
+  const box = document.getElementById(el);
+  box.className = "status" + (kind ? " " + kind : "");
+  box.innerHTML = msg;
+  box.classList.remove("hidden");
+}
+function busy(msg) { return '<span class="spin"></span>' + msg; }
+function dlLink(file, name) {
+  return `<a class="dl" href="/downloads/${encodeURIComponent(file)}" download>⬇ ${name} 저장</a>`;
+}
+
+async function post(path, body) {
+  const res = await fetch(path, {
+    method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "요청 실패");
+  return data;
+}
+
+async function fetchInfo() {
+  const url = document.getElementById("url").value.trim();
+  if (!url) return;
+  const btn = document.getElementById("btn-info");
+  btn.disabled = true;
+  setStatus("info-status", busy("정보를 가져오는 중..."));
+  try {
+    const info = await post("/api/info", {url});
+    document.getElementById("info-status").classList.add("hidden");
+    document.getElementById("thumb").src = info.thumbnail;
+    document.getElementById("title").textContent = info.title;
+    document.getElementById("uploader").textContent = info.uploader;
+    document.getElementById("duration").textContent = info.duration_str;
+    const sel = document.getElementById("quality");
+    sel.innerHTML = '<option value="">최고 화질</option>' +
+      info.resolutions.slice().reverse().map(h => `<option value="${h}">${h}p</option>`).join("");
+    document.getElementById("info-card").classList.remove("hidden");
+  } catch (e) {
+    setStatus("info-status", e.message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function download() {
+  const url = document.getElementById("url").value.trim();
+  const quality = document.getElementById("quality").value;
+  const btn = document.getElementById("btn-dl");
+  btn.disabled = true;
+  setStatus("dl-status", busy("다운로드 중... (영상 길이에 따라 시간이 걸려요)"));
+  try {
+    const data = await post("/api/download", {url, quality});
+    currentFile = data.file;
+    setStatus("dl-status", "다운로드 완료! " + dlLink(data.file, data.name), "ok");
+    document.getElementById("current-file").textContent = data.name;
+    document.getElementById("edit-card").classList.remove("hidden");
+  } catch (e) {
+    setStatus("dl-status", e.message, "err");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function edit(action) {
+  if (!currentFile) return;
+  const body = {file: currentFile, action};
+  if (action === "trim") {
+    body.start = document.getElementById("trim-start").value;
+    body.end = document.getElementById("trim-end").value;
+  } else if (action === "convert") {
+    body.height = document.getElementById("conv-height").value;
+    body.format = document.getElementById("conv-format").value;
+  } else if (action === "audio") {
+    body.format = document.getElementById("audio-format").value;
+  } else if (action === "speed") {
+    body.factor = document.getElementById("speed-factor").value;
+  }
+  setStatus("edit-status", busy("편집 중..."));
+  try {
+    const data = await post("/api/edit", body);
+    setStatus("edit-status", "완료! " + dlLink(data.file, data.name), "ok");
+  } catch (e) {
+    setStatus("edit-status", e.message, "err");
+  }
+}
+</script>
+</body>
+</html>
