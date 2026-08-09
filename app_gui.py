@@ -34,6 +34,7 @@ from youtube_editor import (
     Transcriber,
     build_video,
     extract_candidates,
+    extract_face_shots,
     generate_korean_script,
     make_thumbnail,
     script_tools,
@@ -225,8 +226,12 @@ class AutoEditorApp:
                       activebackground=BLUE_DARK, activeforeground="white",
                       relief="flat", bd=0, pady=14, cursor="hand2")
         b.pack(fill="x", pady=(10, 4))
-        self._btn(p, "🖼 썸네일만 따로 뽑기", self.on_make_thumbnail,
-                  primary=False).pack(fill="x", pady=(0, 4))
+        trow = tk.Frame(p, bg=BG)
+        trow.pack(fill="x", pady=(0, 4))
+        self._btn(trow, "🖼 썸네일만 따로 뽑기", self.on_make_thumbnail,
+                  primary=False).pack(side="left", expand=True, fill="x", padx=(0, 3))
+        self._btn(trow, "🙂 영상 속 얼굴 프레임 뽑기", self.on_extract_faces,
+                  primary=False).pack(side="left", expand=True, fill="x", padx=(3, 0))
 
     # ------------------------------------------------------------ 설정 패널
     def _settings(self, p):
@@ -362,6 +367,21 @@ class AutoEditorApp:
         tk.Entry(r, textvariable=self.thumb_title, font=FONT, relief="solid",
                  bd=1).pack(side="left", fill="x", expand=True)
         tk.Label(sp, text="       비우면 영상 제목을 사용합니다",
+                 bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 anchor="w").pack(fill="x", padx=14)
+
+        r = field(sp, "인물 얼굴 사진")
+        self.face_image = tk.StringVar(value="")
+        self.face_lbl = tk.Label(r, text="선택 안 됨(있으면 오른쪽에 합성)", bg=CARD,
+                                 fg=MUTED, font=FONT, anchor="w")
+        self.face_lbl.pack(side="left", fill="x", expand=True)
+        self._btn(r, "사진 고르기", self.on_pick_face,
+                  primary=False).pack(side="right")
+        r = field(sp, "영상 속 얼굴")
+        self.pick_face = tk.BooleanVar(value=True)
+        tk.Checkbutton(r, text="사진이 없으면 영상에서 얼굴 프레임 자동 선택",
+                       variable=self.pick_face, bg=CARD, font=FONT).pack(side="left")
+        tk.Label(sp, text="       썸네일엔 얼굴을 넣는 게 좋아요: 사진을 고르거나, 영상 속 얼굴을 자동으로 씁니다",
                  bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
                  anchor="w").pack(fill="x", padx=14)
 
@@ -522,12 +542,37 @@ class AutoEditorApp:
             return
         self._run_bg(lambda: self._do_thumbnail(video))
 
+    def on_pick_face(self):
+        path = filedialog.askopenfilename(
+            title="썸네일에 넣을 인물 얼굴 사진",
+            filetypes=[("이미지", "*.png *.jpg *.jpeg *.webp"), ("모든 파일", "*.*")])
+        if path:
+            self.face_image.set(path)
+            self.face_lbl.configure(text=os.path.basename(path), fg=TEXT)
+
+    def on_extract_faces(self):
+        video = self.last_output or self.video_path
+        if not video or not os.path.exists(video):
+            messagebox.showwarning("알림", "먼저 영상을 만들거나 불러오세요.")
+            return
+
+        def work():
+            self.log_msg("🙂 영상에서 얼굴 프레임 찾는 중...")
+            shots = extract_face_shots(video, DOWNLOAD_DIR, count=5, log=self.log_msg)
+            if shots:
+                self.log_msg(f"✔ 얼굴 프레임 {len(shots)}장: face_shot_1~{len(shots)}.jpg "
+                             "(마음에 드는 걸 인물 사진으로 골라도 됩니다)")
+        self._run_bg(work)
+
     def _do_thumbnail(self, video: str):
         title = self.thumb_title.get().strip() or self.video_title
+        face = self.face_image.get().strip() or None
         self.log_msg("🖼 썸네일 생성 중...")
         extract_candidates(video, DOWNLOAD_DIR, count=5, log=self.log_msg)
         out = os.path.join(DOWNLOAD_DIR, "thumbnail.jpg")
-        make_thumbnail(video, out, title=title, log=self.log_msg)
+        make_thumbnail(video, out, title=title, face_image=face,
+                       pick_face=(face is None and self.pick_face.get()),
+                       log=self.log_msg)
         self.log_msg(f"✔ 썸네일: {out}  (대표 프레임 후보: thumb_cand_1~5.jpg)")
 
     def on_make_voice_script(self):

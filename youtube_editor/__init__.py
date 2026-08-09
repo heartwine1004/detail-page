@@ -26,7 +26,12 @@ from .tts import (
     KO_VOICES,
 )
 from .scriptgen import generate_korean_script, ScriptGenError, DEFAULT_MODEL
-from .thumbnail import extract_candidates, make_thumbnail, ThumbnailError
+from .thumbnail import (
+    extract_candidates,
+    extract_face_shots,
+    make_thumbnail,
+    ThumbnailError,
+)
 from . import script_tools, srt_utils, tts, scriptgen, thumbnail
 
 __all__ = [
@@ -37,7 +42,7 @@ __all__ = [
     "synthesize_script", "EdgeEngine", "CloneEngine", "ElevenLabsEngine",
     "TTSError", "KO_VOICES",
     "generate_korean_script", "ScriptGenError", "DEFAULT_MODEL",
-    "extract_candidates", "make_thumbnail", "ThumbnailError",
+    "extract_candidates", "extract_face_shots", "make_thumbnail", "ThumbnailError",
     "script_tools", "srt_utils", "tts", "scriptgen", "thumbnail",
 ]
 

@@ -11,6 +11,9 @@ anthropic>=0.40.0
 # 나레이션 음성 — 기본 TTS(무료, 온라인)
 edge-tts>=6.1.0
 
+# 썸네일 얼굴 인식(YuNet) — 얼굴 프레임 자동 선택 / 인물 합성
+opencv-python-headless>=4.8.0
+
 # 선택: '내 목소리 복제'(Coqui XTTS) — 설치 시에만 동작. torch 등 대용량
 # TTS>=0.22.0
 
