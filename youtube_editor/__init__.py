@@ -17,14 +17,24 @@ from .assembler import (
     SourceMark,
     build_video,
 )
-from . import script_tools, srt_utils
+from .tts import (
+    synthesize_script,
+    EdgeEngine,
+    CloneEngine,
+    ElevenLabsEngine,
+    TTSError,
+    KO_VOICES,
+)
+from . import script_tools, srt_utils, tts
 
 __all__ = [
     "Downloader", "VideoInfo", "DownloadError",
     "Editor", "EditorError",
     "Transcriber", "TranscriptResult", "TranscribeError",
     "AssembleOptions", "AssembleError", "SubStyle", "SourceMark", "build_video",
-    "script_tools", "srt_utils",
+    "synthesize_script", "EdgeEngine", "CloneEngine", "ElevenLabsEngine",
+    "TTSError", "KO_VOICES",
+    "script_tools", "srt_utils", "tts",
 ]
 
 __version__ = "0.2.0"

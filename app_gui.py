@@ -24,12 +24,16 @@ from tkinter import colorchooser, filedialog, messagebox, ttk
 
 from youtube_editor import (
     AssembleOptions,
+    CloneEngine,
     Downloader,
+    EdgeEngine,
+    KO_VOICES,
     SourceMark,
     SubStyle,
     Transcriber,
     build_video,
     script_tools,
+    synthesize_script,
 )
 from youtube_editor.editor import parse_time
 
@@ -178,21 +182,27 @@ class AutoEditorApp:
         self.script_text.pack(fill="x", padx=14, pady=(2, 6))
         row = tk.Frame(c, bg=CARD)
         row.pack(fill="x", padx=14)
-        self._btn(row, "음성용 대본 만들기", self.on_make_voice_script).pack(side="right")
-        self._hint(c, "→ 복사된 내용을 Vrew에 붙여 음성(wav)과 자막(srt)을 내보내세요")
+        # ⭐ Vrew 없이 앱에서 바로 음성+자막 생성
+        self._btn(row, "🔊 음성·자막 자동 생성",
+                  self.on_auto_voice).pack(side="right")
+        self._btn(row, "음성용 대본 복사(Vrew)", self.on_make_voice_script,
+                  primary=False).pack(side="right", padx=6)
+        self._hint(c, "‘자동 생성’: 설정의 음성(기본 TTS/내 목소리)으로 wav·srt를 바로 만들어 5단계에 채웁니다  ·  또는 대본을 복사해 Vrew로 내보내도 됨")
 
     # -------------------------------------------------------------- Step 5
     def _step5(self, p):
-        c = self._card(p, "5", "Vrew 파일 선택")
+        c = self._card(p, "5", "음성·자막 파일 (자동 생성되거나 직접 선택)")
+        self.file_labels = {}
         for key, label in [("wav", "5-1  음성 파일 (wav / mp3)"),
                            ("srt", "5-2  자막 파일 (srt)")]:
             row = tk.Frame(c, bg=CARD)
             row.pack(fill="x", padx=14, pady=3)
             tk.Label(row, text=label, bg=CARD, fg=TEXT, font=FONT,
                      width=24, anchor="w").pack(side="left")
-            lbl = tk.Label(row, text="아직 선택 안 됨", bg=CARD, fg=MUTED, font=FONT,
+            lbl = tk.Label(row, text="아직 없음", bg=CARD, fg=MUTED, font=FONT,
                            anchor="w")
             lbl.pack(side="left", fill="x", expand=True)
+            self.file_labels[key] = lbl
             self._btn(row, "파일 고르기",
                       (lambda k=key, l=lbl: self.on_pick_file(k, l)),
                       primary=False).pack(side="right")
@@ -275,6 +285,43 @@ class AutoEditorApp:
                  bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
                  anchor="w").pack(fill="x", padx=14)
 
+        # ---- 나레이션 음성 (TTS / 내 목소리 복제) ----
+        tk.Frame(sp, bg=LINE, height=1).pack(fill="x", padx=14, pady=(8, 4))
+        tk.Label(sp, text="🔊 나레이션 음성", bg=CARD, fg=BLUE,
+                 font=FONT_B, anchor="w").pack(fill="x", padx=14)
+
+        r = field(sp, "음성 방식")
+        self.voice_engine = tk.StringVar(value="edge")
+        tk.Radiobutton(r, text="기본 TTS(무료)", variable=self.voice_engine,
+                       value="edge", bg=CARD, font=FONT).pack(side="left")
+        tk.Radiobutton(r, text="내 목소리(복제)", variable=self.voice_engine,
+                       value="clone", bg=CARD, font=FONT).pack(side="left")
+
+        r = field(sp, "TTS 목소리")
+        self.tts_voice = tk.StringVar(value="ko-KR-SunHiNeural")
+        ttk.Combobox(r, textvariable=self.tts_voice, width=28, state="readonly",
+                     values=[f"{k}  —  {v}" for k, v in KO_VOICES.items()]
+                     ).pack(side="left")
+        self.tts_voice.set(f"ko-KR-SunHiNeural  —  {KO_VOICES['ko-KR-SunHiNeural']}")
+
+        r = field(sp, "말 빠르기")
+        self.tts_rate = tk.StringVar(value="+0%")
+        ttk.Combobox(r, textvariable=self.tts_rate, width=8, state="readonly",
+                     values=["-20%", "-10%", "+0%", "+10%", "+20%", "+30%"]
+                     ).pack(side="left")
+
+        r = field(sp, "내 음성 샘플")
+        self.speaker_wav = tk.StringVar(value="")
+        self.speaker_lbl = tk.Label(r, text="선택 안 됨(복제 시 필요)", bg=CARD,
+                                    fg=MUTED, font=FONT, anchor="w")
+        self.speaker_lbl.pack(side="left", fill="x", expand=True)
+        self._btn(r, "샘플 고르기", self.on_pick_speaker,
+                  primary=False).pack(side="right")
+        tk.Label(sp, text="       내 목소리 복제: 6~30초 정도의 깨끗한 내 음성 wav 를 넣으면 그 목소리로 읽어줍니다 (Coqui XTTS)",
+                 bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 anchor="w").pack(fill="x", padx=14)
+
+        tk.Frame(sp, bg=LINE, height=1).pack(fill="x", padx=14, pady=(8, 4))
         r = field(sp, "기타")
         self.remove_bgm = tk.BooleanVar(value=False)
         tk.Checkbutton(r, text="원본 BGM 제거(demucs, 앰비언스/부분더빙 시)",
@@ -416,6 +463,44 @@ class AutoEditorApp:
             f.write(vrew)
         n = len([x for x in vrew.split("\n") if x.strip()])
         self.log_msg(f"[+] 음성용 대본 {n}문장 복사됨 → Vrew에 붙여 음성(wav)·자막(srt)을 내보내세요")
+
+    def on_pick_speaker(self):
+        path = filedialog.askopenfilename(
+            title="내 목소리 샘플 (wav, 6~30초)",
+            filetypes=[("음성", "*.wav *.mp3 *.m4a"), ("모든 파일", "*.*")])
+        if path:
+            self.speaker_wav.set(path)
+            self.speaker_lbl.configure(text=os.path.basename(path), fg=TEXT)
+
+    def _make_engine(self):
+        if self.voice_engine.get() == "clone":
+            spk = self.speaker_wav.get().strip()
+            if not spk:
+                raise RuntimeError("‘내 목소리(복제)’ 방식은 설정에서 음성 샘플을 먼저 골라주세요.")
+            self.log_msg("  음성 엔진: 내 목소리 복제(Coqui XTTS)")
+            return CloneEngine(speaker_wav=spk, language="ko")
+        voice = self.tts_voice.get().split("  —  ")[0].strip()
+        self.log_msg(f"  음성 엔진: 기본 TTS ({voice}, {self.tts_rate.get()})")
+        return EdgeEngine(voice=voice, rate=self.tts_rate.get())
+
+    def on_auto_voice(self):
+        script = self.script_text.get("1.0", "end").strip()
+        if not script:
+            messagebox.showwarning("알림", "받은 대본을 붙여넣으세요.")
+            return
+        self.log_msg("─" * 40)
+        self.log_msg("[4.5] 음성·자막 자동 생성 중...")
+
+        def work():
+            engine = self._make_engine()
+            wav = os.path.join(DOWNLOAD_DIR, "narration.wav")
+            srt = os.path.join(DOWNLOAD_DIR, "narration.srt")
+            synthesize_script(script, engine, wav, srt, gap=0.35, log=self.log_msg)
+            self.wav_path, self.srt_path = wav, srt
+            self.file_labels["wav"].configure(text=os.path.basename(wav), fg=TEXT)
+            self.file_labels["srt"].configure(text=os.path.basename(srt), fg=TEXT)
+            self.log_msg("✔ 음성(wav)·자막(srt) 완성 → 바로 [6. 영상 만들기] 가능")
+        self._run_bg(work)
 
     def on_pick_file(self, kind: str, label: tk.Label):
         ft = [("음성", "*.wav *.mp3 *.m4a")] if kind == "wav" else [("자막", "*.srt")]
