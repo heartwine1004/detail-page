@@ -9,16 +9,20 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
-try:
-    import yt_dlp
-except ImportError as exc:  # pragma: no cover
-    raise ImportError(
-        "yt-dlp 가 필요합니다. `pip install -r requirements.txt` 를 실행하세요."
-    ) from exc
-
 
 class DownloadError(Exception):
     """다운로드 중 발생한 오류."""
+
+
+def _import_ytdlp():
+    """yt-dlp 를 지연 임포트 (앱 시작 시 의존성 없어도 뜨도록)."""
+    try:
+        import yt_dlp
+        return yt_dlp
+    except ImportError as exc:  # pragma: no cover
+        raise DownloadError(
+            "yt-dlp 가 필요합니다. `pip install -r requirements.txt` 를 실행하세요."
+        ) from exc
 
 
 @dataclass
@@ -65,6 +69,7 @@ class Downloader:
     # ------------------------------------------------------------------ info
     def get_info(self, url: str) -> VideoInfo:
         """영상을 내려받지 않고 메타데이터만 조회한다."""
+        yt_dlp = _import_ytdlp()
         opts = {"quiet": True, "no_warnings": True, "skip_download": True}
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
@@ -108,6 +113,7 @@ class Downloader:
 
         max_height: 지정하면 해당 화질 이하로 다운로드 (예: 720). None 이면 최고 화질.
         """
+        yt_dlp = _import_ytdlp()
         # 영상+오디오를 합쳐 편집하기 좋은 mp4 로 받는다.
         if max_height:
             fmt = (

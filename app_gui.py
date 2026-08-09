@@ -1,0 +1,486 @@
+#!/usr/bin/env python3
+"""자동편집기 (벤치마크) — 데스크톱 GUI.
+
+외국 유튜브 영상을 한국어 더빙·자막 콘텐츠로 자동 재편집하는 도구.
+스크린샷의 자동편집기 워크플로우(6단계)를 그대로 구현한다.
+
+  1. 유튜브 링크 붙여넣기 (또는 영상 파일)
+  2. 원어 자막 만들기 (음성인식)
+  3. 대본용 스크립트 뽑기 → 클립보드 → Claude 로 한국어 대본 생성
+  4. 받은 대본 붙여넣기 → Vrew 용 음성 대본 정리
+  5. Vrew 파일 선택 (음성 wav + 자막 srt)
+  6. 영상 만들기 (나레이션 + 자막 + 출처 + 부분더빙)
+
+실행:  python app_gui.py   (Python 3.10+, tkinter 필요)
+"""
+
+from __future__ import annotations
+
+import os
+import queue
+import threading
+import tkinter as tk
+from tkinter import colorchooser, filedialog, messagebox, ttk
+
+from youtube_editor import (
+    AssembleOptions,
+    Downloader,
+    SourceMark,
+    SubStyle,
+    Transcriber,
+    build_video,
+    script_tools,
+)
+from youtube_editor.editor import parse_time
+
+# ------------------------------------------------------------------ 색/스타일
+BLUE = "#2b6cff"
+BLUE_DARK = "#1e50c8"
+BG = "#eef1f6"
+CARD = "#ffffff"
+LINE = "#d6dbe4"
+TEXT = "#1b2430"
+MUTED = "#7a8394"
+FONT = ("Malgun Gothic", 10)
+FONT_B = ("Malgun Gothic", 10, "bold")
+FONT_H = ("Malgun Gothic", 15, "bold")
+
+DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+
+class AutoEditorApp:
+    def __init__(self, root: tk.Tk):
+        self.root = root
+        root.title("자동편집기 v1.43k (벤치마크)")
+        root.geometry("640x900")
+        root.configure(bg=BG)
+
+        # ---- 상태 ----
+        self.video_path: str | None = None
+        self.channel_name: str = ""
+        self.orig_srt: str | None = None
+        self.transcript = None
+        self.wav_path: str | None = None
+        self.srt_path: str | None = None
+
+        self.downloader = Downloader(DOWNLOAD_DIR)
+        self.log_q: queue.Queue[str] = queue.Queue()
+
+        self._build_ui()
+        self.root.after(100, self._drain_log)
+
+    # ============================================================== UI 빌드
+    def _build_ui(self):
+        # 스크롤 캔버스
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(fill="both", expand=True)
+        canvas = tk.Canvas(outer, bg=BG, highlightthickness=0)
+        sb = ttk.Scrollbar(outer, orient="vertical", command=canvas.yview)
+        self.body = tk.Frame(canvas, bg=BG)
+        self.body.bind(
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        win = canvas.create_window((0, 0), window=self.body, anchor="nw")
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win, width=e.width))
+        canvas.configure(yscrollcommand=sb.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        sb.pack(side="right", fill="y")
+        canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-e.delta / 120), "units"),
+        )
+
+        # ---- 헤더 ----
+        head = tk.Frame(self.body, bg=BLUE)
+        head.pack(fill="x")
+        tk.Label(head, text="자동편집기", bg=BLUE, fg="white",
+                 font=FONT_H).pack(side="left", padx=16, pady=12)
+        tk.Label(head, text="v1.43k (벤치마크)", bg=BLUE, fg="#d6e2ff",
+                 font=FONT).pack(side="right", padx=16)
+
+        pad = tk.Frame(self.body, bg=BG)
+        pad.pack(fill="both", expand=True, padx=14, pady=12)
+        self.cards = pad
+
+        self._step1(pad)
+        self._step2(pad)
+        self._step3(pad)
+        self._step4(pad)
+        self._step5(pad)
+        self._step6(pad)
+        self._settings(pad)
+        self._logbox(pad)
+
+    def _card(self, parent, num: str, title: str) -> tk.Frame:
+        card = tk.Frame(parent, bg=CARD, highlightbackground=LINE,
+                        highlightthickness=1)
+        card.pack(fill="x", pady=6)
+        top = tk.Frame(card, bg=CARD)
+        top.pack(fill="x", padx=14, pady=(12, 6))
+        tk.Label(top, text=f" {num} ", bg=BLUE, fg="white",
+                 font=FONT_B).pack(side="left")
+        tk.Label(top, text="  " + title, bg=CARD, fg=TEXT,
+                 font=FONT_B).pack(side="left")
+        return card
+
+    def _btn(self, parent, text, cmd, primary=True):
+        b = tk.Button(parent, text=text, command=cmd, font=FONT_B,
+                      bg=BLUE if primary else "#eaeef5",
+                      fg="white" if primary else TEXT,
+                      activebackground=BLUE_DARK if primary else "#dde3ec",
+                      activeforeground="white" if primary else TEXT,
+                      relief="flat", bd=0, padx=14, pady=6, cursor="hand2")
+        return b
+
+    def _hint(self, parent, text):
+        tk.Label(parent, text=text, bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 justify="left", anchor="w").pack(fill="x", padx=14, pady=(0, 10))
+
+    # -------------------------------------------------------------- Step 1
+    def _step1(self, p):
+        c = self._card(p, "1", "유튜브 링크 붙여넣기")
+        row = tk.Frame(c, bg=CARD)
+        row.pack(fill="x", padx=14)
+        self.url_var = tk.StringVar()
+        tk.Entry(row, textvariable=self.url_var, font=FONT, relief="solid",
+                 bd=1).pack(fill="x", ipady=5)
+        row2 = tk.Frame(c, bg=CARD)
+        row2.pack(fill="x", padx=14, pady=8)
+        self._btn(row2, "⬇ 다운로드", self.on_download).pack(side="left")
+        self._btn(row2, "📁 영상 파일로 하기 (링크가 안 될 때)",
+                  self.on_pick_video, primary=False).pack(side="left", padx=6)
+        self.step1_status = tk.Label(c, text="", bg=CARD, fg=MUTED, font=FONT,
+                                     anchor="w")
+        self.step1_status.pack(fill="x", padx=14, pady=(0, 10))
+
+    # -------------------------------------------------------------- Step 2
+    def _step2(self, p):
+        c = self._card(p, "2", "원어 자막 만들기 (무료)")
+        row = tk.Frame(c, bg=CARD)
+        row.pack(fill="x", padx=14)
+        self._btn(row, "자막 만들기", self.on_transcribe).pack(side="right")
+        self._hint(c, "5~10분 — 아래 로그에 '완성'이 뜬 뒤 다음 단계로 가세요")
+
+    # -------------------------------------------------------------- Step 3
+    def _step3(self, p):
+        c = self._card(p, "3", "대본용 스크립트 뽑기")
+        row = tk.Frame(c, bg=CARD)
+        row.pack(fill="x", padx=14)
+        self._btn(row, "스크립트 뽑기", self.on_extract_script).pack(side="right")
+        self._hint(c, "자동 복사됨 → 클로드(대본생성기)에 붙여넣고 대본을 받아오세요")
+
+    # -------------------------------------------------------------- Step 4
+    def _step4(self, p):
+        c = self._card(p, "4", "받은 대본 붙여넣기")
+        self.script_text = tk.Text(c, height=7, font=FONT, relief="solid", bd=1,
+                                   wrap="word")
+        self.script_text.pack(fill="x", padx=14, pady=(2, 6))
+        row = tk.Frame(c, bg=CARD)
+        row.pack(fill="x", padx=14)
+        self._btn(row, "음성용 대본 만들기", self.on_make_voice_script).pack(side="right")
+        self._hint(c, "→ 복사된 내용을 Vrew에 붙여 음성(wav)과 자막(srt)을 내보내세요")
+
+    # -------------------------------------------------------------- Step 5
+    def _step5(self, p):
+        c = self._card(p, "5", "Vrew 파일 선택")
+        for key, label in [("wav", "5-1  음성 파일 (wav / mp3)"),
+                           ("srt", "5-2  자막 파일 (srt)")]:
+            row = tk.Frame(c, bg=CARD)
+            row.pack(fill="x", padx=14, pady=3)
+            tk.Label(row, text=label, bg=CARD, fg=TEXT, font=FONT,
+                     width=24, anchor="w").pack(side="left")
+            lbl = tk.Label(row, text="아직 선택 안 됨", bg=CARD, fg=MUTED, font=FONT,
+                           anchor="w")
+            lbl.pack(side="left", fill="x", expand=True)
+            self._btn(row, "파일 고르기",
+                      (lambda k=key, l=lbl: self.on_pick_file(k, l)),
+                      primary=False).pack(side="right")
+        tk.Frame(c, bg=CARD, height=8).pack()
+
+    # -------------------------------------------------------------- Step 6
+    def _step6(self, p):
+        b = tk.Button(p, text="▶  6.  영상 만들기", command=self.on_build,
+                      font=("Malgun Gothic", 13, "bold"), bg=BLUE, fg="white",
+                      activebackground=BLUE_DARK, activeforeground="white",
+                      relief="flat", bd=0, pady=14, cursor="hand2")
+        b.pack(fill="x", pady=(10, 4))
+
+    # ------------------------------------------------------------ 설정 패널
+    def _settings(self, p):
+        bar = tk.Frame(p, bg=BG)
+        bar.pack(fill="x", pady=(6, 0))
+        self.settings_open = tk.BooleanVar(value=False)
+        self.settings_btn = tk.Button(
+            bar, text="⚙  설정 (자막 폰트/색 · 출처 · BGM · 부분더빙)   ▼",
+            command=self._toggle_settings, font=FONT, bg=BG, fg=MUTED,
+            relief="flat", bd=0, anchor="w", cursor="hand2")
+        self.settings_btn.pack(fill="x")
+
+        self.settings_panel = tk.Frame(p, bg=CARD, highlightbackground=LINE,
+                                       highlightthickness=1)
+
+        def field(parent, label):
+            row = tk.Frame(parent, bg=CARD)
+            row.pack(fill="x", padx=14, pady=4)
+            tk.Label(row, text=label, bg=CARD, fg=TEXT, font=FONT, width=16,
+                     anchor="w").pack(side="left")
+            return row
+
+        sp = self.settings_panel
+        # 자막
+        r = field(sp, "자막 폰트/크기")
+        self.sub_font = tk.StringVar(value="NanumGothic")
+        tk.Entry(r, textvariable=self.sub_font, font=FONT, width=16,
+                 relief="solid", bd=1).pack(side="left")
+        self.sub_size = tk.IntVar(value=24)
+        tk.Spinbox(r, from_=12, to=48, textvariable=self.sub_size, width=4,
+                   font=FONT).pack(side="left", padx=6)
+        self.sub_box = tk.BooleanVar(value=True)
+        tk.Checkbutton(r, text="배경 박스", variable=self.sub_box, bg=CARD,
+                       font=FONT).pack(side="left", padx=6)
+
+        r = field(sp, "자막 색상")
+        self.col_primary = self._color_pick(r, "글자", "#FFFFFF")
+        self.col_outline = self._color_pick(r, "테두리", "#000000")
+        self.col_back = self._color_pick(r, "배경", "#000000")
+
+        # 출처
+        r = field(sp, "출처 표시")
+        self.src_text = tk.StringVar(value="")
+        tk.Entry(r, textvariable=self.src_text, font=FONT, relief="solid",
+                 bd=1).pack(side="left", fill="x", expand=True)
+        r = field(sp, "출처 위치")
+        self.src_pos = tk.StringVar(value="top-left")
+        ttk.Combobox(r, textvariable=self.src_pos, width=12, state="readonly",
+                     values=["top-left", "top-right", "bottom-left",
+                             "bottom-right"]).pack(side="left")
+        tk.Label(r, text="(비우면 원본 채널명 자동)", bg=CARD, fg=MUTED,
+                 font=("Malgun Gothic", 8)).pack(side="left", padx=6)
+
+        # 오디오 모드 (부분 더빙 포함)
+        r = field(sp, "오디오")
+        self.audio_mode = tk.StringVar(value="replace")
+        for val, txt in [("replace", "나레이션만"),
+                         ("ambience", "원본 앰비언스 깔기"),
+                         ("dub", "부분더빙(원음 살리기)")]:
+            tk.Radiobutton(r, text=txt, variable=self.audio_mode, value=val,
+                           bg=CARD, font=FONT).pack(side="left")
+
+        r = field(sp, "원음 유지 구간")
+        self.orig_ranges = tk.StringVar(value="")
+        tk.Entry(r, textvariable=self.orig_ranges, font=FONT, relief="solid",
+                 bd=1).pack(side="left", fill="x", expand=True)
+        tk.Label(sp, text="       예: 0:12-0:18, 1:05-1:20  (부분더빙 모드에서 이 구간은 원본 인물 목소리)",
+                 bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 anchor="w").pack(fill="x", padx=14)
+
+        r = field(sp, "기타")
+        self.remove_bgm = tk.BooleanVar(value=False)
+        tk.Checkbutton(r, text="원본 BGM 제거(demucs, 앰비언스/부분더빙 시)",
+                       variable=self.remove_bgm, bg=CARD, font=FONT).pack(side="left")
+        tk.Frame(sp, bg=CARD, height=8).pack()
+
+    def _color_pick(self, parent, label, default):
+        var = tk.StringVar(value=default)
+        tk.Label(parent, text=label, bg=CARD, fg=MUTED, font=FONT).pack(side="left")
+        sw = tk.Label(parent, text="  ", bg=default, relief="solid", bd=1)
+        sw.pack(side="left", padx=(2, 8))
+
+        def pick():
+            c = colorchooser.askcolor(color=var.get())[1]
+            if c:
+                var.set(c)
+                sw.configure(bg=c)
+        sw.bind("<Button-1>", lambda e: pick())
+        return var
+
+    def _toggle_settings(self):
+        if self.settings_open.get():
+            self.settings_panel.pack_forget()
+            self.settings_btn.configure(text=self.settings_btn.cget("text")[:-1] + "▼")
+        else:
+            self.settings_panel.pack(fill="x", after=self.settings_btn.master)
+            self.settings_btn.configure(text=self.settings_btn.cget("text")[:-1] + "▲")
+        self.settings_open.set(not self.settings_open.get())
+
+    # ------------------------------------------------------------- 로그창
+    def _logbox(self, p):
+        c = tk.Frame(p, bg="#0d1017")
+        c.pack(fill="both", expand=True, pady=(8, 0))
+        self.log = tk.Text(c, height=10, bg="#0d1017", fg="#cdd6e4",
+                           font=("Consolas", 9), relief="flat", wrap="word",
+                           state="disabled")
+        self.log.pack(fill="both", expand=True, padx=2, pady=2)
+
+    # ============================================================== 로깅/스레드
+    def log_msg(self, msg: str):
+        self.log_q.put(msg)
+
+    def _drain_log(self):
+        try:
+            while True:
+                msg = self.log_q.get_nowait()
+                self.log.configure(state="normal")
+                self.log.insert("end", msg + "\n")
+                self.log.see("end")
+                self.log.configure(state="disabled")
+        except queue.Empty:
+            pass
+        self.root.after(100, self._drain_log)
+
+    def _run_bg(self, fn):
+        threading.Thread(target=self._guard(fn), daemon=True).start()
+
+    def _guard(self, fn):
+        def wrapped():
+            try:
+                fn()
+            except Exception as exc:  # noqa: BLE001
+                self.log_msg(f"[오류] {exc}")
+        return wrapped
+
+    # ============================================================== 동작들
+    def on_download(self):
+        url = self.url_var.get().strip()
+        if not url:
+            messagebox.showwarning("알림", "유튜브 링크를 입력하세요.")
+            return
+        self.step1_status.configure(text="다운로드 중...")
+        self.log_msg(f"[*] 다운로드: {url}")
+
+        def work():
+            try:
+                info = self.downloader.get_info(url)
+                self.channel_name = info.uploader
+                self.log_msg(f"    제목: {info.title} / {info.duration_str}")
+            except Exception as exc:  # noqa: BLE001
+                self.log_msg(f"    (정보 조회 건너뜀: {exc})")
+            path = self.downloader.download(url)
+            self.video_path = path
+            self.log_msg(f"[+] 저장됨: {os.path.basename(path)}")
+            self.step1_status.configure(text=f"완료: {os.path.basename(path)}")
+        self._run_bg(work)
+
+    def on_pick_video(self):
+        path = filedialog.askopenfilename(
+            title="영상 파일 선택",
+            filetypes=[("영상", "*.mp4 *.mkv *.webm *.mov *.avi"), ("모든 파일", "*.*")])
+        if path:
+            self.video_path = path
+            self.step1_status.configure(text=f"파일: {os.path.basename(path)}")
+            self.log_msg(f"[+] 영상 파일 선택: {path}")
+
+    def on_transcribe(self):
+        if not self.video_path:
+            messagebox.showwarning("알림", "먼저 영상을 다운로드하거나 파일을 선택하세요.")
+            return
+        self.log_msg("원어 음성인식 시작 — 20분 영상 기준 5~10분 걸려요")
+
+        def work():
+            tr = Transcriber(model_size="small")
+            result = tr.transcribe(self.video_path, log=self.log_msg)
+            self.transcript = result
+            base = os.path.splitext(os.path.basename(self.video_path))[0]
+            self.orig_srt = os.path.join(DOWNLOAD_DIR, base + ".orig.srt")
+            with open(self.orig_srt, "w", encoding="utf-8") as f:
+                f.write(result.to_srt())
+            self.log_msg(f"완성 ✔  원어 자막 {result.sentence_count}문장 → {os.path.basename(self.orig_srt)}")
+            self.log_msg("이제 [스크립트 뽑기]를 눌러 대본을 만드세요")
+        self._run_bg(work)
+
+    def on_extract_script(self):
+        if not self.transcript:
+            messagebox.showwarning("알림", "먼저 2단계(자막 만들기)를 완료하세요.")
+            return
+        title = ""
+        prompt = script_tools.build_claude_prompt(self.transcript.to_text(), title)
+        self.root.clipboard_clear()
+        self.root.clipboard_append(prompt)
+        path = os.path.join(DOWNLOAD_DIR, "claude_prompt.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(prompt)
+        self.log_msg("[+] 대본용 스크립트 자동 복사됨 → 클로드(대본생성기)에 붙여넣으세요")
+        self.log_msg(f"    (백업 저장: {os.path.basename(path)})")
+
+    def on_make_voice_script(self):
+        script = self.script_text.get("1.0", "end").strip()
+        if not script:
+            messagebox.showwarning("알림", "받은 대본을 붙여넣으세요.")
+            return
+        vrew = script_tools.format_for_vrew(script)
+        self.root.clipboard_clear()
+        self.root.clipboard_append(vrew)
+        path = os.path.join(DOWNLOAD_DIR, "vrew_script.txt")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(vrew)
+        n = len([x for x in vrew.split("\n") if x.strip()])
+        self.log_msg(f"[+] 음성용 대본 {n}문장 복사됨 → Vrew에 붙여 음성(wav)·자막(srt)을 내보내세요")
+
+    def on_pick_file(self, kind: str, label: tk.Label):
+        ft = [("음성", "*.wav *.mp3 *.m4a")] if kind == "wav" else [("자막", "*.srt")]
+        path = filedialog.askopenfilename(title="파일 선택", filetypes=ft + [("모든 파일", "*.*")])
+        if not path:
+            return
+        if kind == "wav":
+            self.wav_path = path
+        else:
+            self.srt_path = path
+        label.configure(text=os.path.basename(path), fg=TEXT)
+        self.log_msg(f"[+] {kind} 선택: {os.path.basename(path)}")
+
+    def _parse_ranges(self, text: str):
+        ranges = []
+        for chunk in text.replace(",", " ").split():
+            if "-" not in chunk:
+                continue
+            a, b = chunk.split("-", 1)
+            try:
+                ranges.append((parse_time(a), parse_time(b)))
+            except Exception:  # noqa: BLE001
+                self.log_msg(f"  · 구간 해석 실패: {chunk}")
+        return ranges
+
+    def on_build(self):
+        if not self.video_path:
+            messagebox.showwarning("알림", "영상이 없습니다. 1단계를 먼저 하세요.")
+            return
+        if not self.wav_path:
+            messagebox.showwarning("알림", "Vrew 음성(wav) 파일을 5단계에서 선택하세요.")
+            return
+
+        src_text = self.src_text.get().strip() or (
+            f"출처: {self.channel_name}" if self.channel_name else "")
+        opt = AssembleOptions(
+            subtitle=SubStyle(
+                font=self.sub_font.get(), fontsize=self.sub_size.get(),
+                primary=self.col_primary.get(), outline=self.col_outline.get(),
+                back=self.col_back.get(), box=self.sub_box.get()),
+            source=SourceMark(text=src_text, position=self.src_pos.get()),
+            audio_mode=self.audio_mode.get(),
+            original_segments=self._parse_ranges(self.orig_ranges.get()),
+            remove_original_bgm=self.remove_bgm.get(),
+        )
+        srt = self.srt_path
+        out = os.path.join(DOWNLOAD_DIR, "완성본.mp4")
+        self.log_msg("─" * 40)
+        self.log_msg("[6] 영상 만들기 시작...")
+        if opt.audio_mode == "dub":
+            self.log_msg(f"    부분더빙: 원음 구간 {len(opt.original_segments)}개")
+
+        def work():
+            result = build_video(self.video_path, self.wav_path, srt, out, opt,
+                                 log=self.log_msg)
+            self.log_msg(f"🎉 완성! → {result}")
+            messagebox.showinfo("완성", f"영상이 만들어졌어요:\n{result}")
+        self._run_bg(work)
+
+
+def main():
+    root = tk.Tk()
+    AutoEditorApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()

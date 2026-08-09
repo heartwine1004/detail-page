@@ -1,75 +1,64 @@
-# 🎬 유튜브 다운로드 & 편집기
+# 🎬 자동편집기 (유튜브 → 한국어 더빙·자막 자동 재편집)
 
-유튜브 영상 링크를 주면 **편집할 수 있게 다운로드**하고, 곧바로
-**자르기 · 화질/포맷 변환 · 오디오 추출 · 속도 조절**까지 해 주는 프로그램입니다.
+외국 유튜브 영상을 **한국어 나레이션(더빙) + 한국어 자막 콘텐츠**로 자동
+재편집하는 데스크톱 프로그램입니다. 스크린샷의 *자동편집기* 워크플로우를
+벤치마크해 만들었습니다.
 
-- **웹 UI**: 브라우저에서 링크 붙여넣고 버튼으로 편집 (비개발자 친화적)
-- **CLI**: 터미널 명령 한 줄로 다운로드+편집 (자동화에 유리)
-- 내부는 [`yt-dlp`](https://github.com/yt-dlp/yt-dlp)(다운로드) + [`ffmpeg`](https://ffmpeg.org)(편집)
+> 원본 영상은 **출처 표시(저작권자 태그)** 기능으로 채널명을 화면에 넣습니다.
 
----
+## 6단계 워크플로우
 
-## ⚖️ 사용 전 안내
+| 단계 | 내용 | 사용 기술 |
+|---|---|---|
+| **1** | 유튜브 링크 붙여넣기 (또는 로컬 영상 파일) | yt-dlp |
+| **2** | 원어 자막 만들기 (음성인식, 단어 단위 싱크) | faster-whisper |
+| **3** | 대본용 스크립트 뽑기 → 클립보드 복사 → **Claude**로 한국어 대본 생성 | — |
+| **4** | 받은 대본 붙여넣기 → **Vrew**용 음성 대본으로 정리(복사) | — |
+| **5** | Vrew에서 내보낸 음성(wav) + 자막(srt) 파일 선택 | — |
+| **6** | 영상 만들기: 원본 영상 + 한국어 나레이션 + 자막 + 출처 + 부분더빙 | ffmpeg |
 
-- 본인이 저작권을 가졌거나, 다운로드·편집이 허용된 영상만 이용하세요.
-- 유튜브 서비스 약관과 저작권법을 준수하는 것은 사용자 책임입니다.
+### ⭐ 부분 더빙 (원음 살리기)
 
----
-
-## 1. 설치
-
-```bash
-# 1) 파이썬 패키지
-pip install -r requirements.txt
-
-# 2) ffmpeg (편집에 필요)
-#   Ubuntu/Debian : sudo apt-get install ffmpeg
-#   macOS (brew)  : brew install ffmpeg
-#   Windows       : https://ffmpeg.org/download.html 에서 받아 PATH 등록
-```
-
-## 2. 웹 UI로 사용하기 (추천)
-
-```bash
-python webapp/app.py
-# 브라우저에서 http://127.0.0.1:5000 접속
-```
-
-사용 흐름: **링크 붙여넣기 → 정보 조회 → 다운로드 → 편집 버튼 클릭 → 결과 저장**
-
-## 3. 명령줄(CLI)로 사용하기
-
-```bash
-# 영상 정보 보기
-python cli.py info "https://youtu.be/XXXX"
-
-# 720p 로 다운로드
-python cli.py download "https://youtu.be/XXXX" --quality 720
-
-# 다운로드 + 0:10~1:30 구간 잘라내기 (한 번에)
-python cli.py edit "https://youtu.be/XXXX" --trim 0:10 1:30
-
-# 다운로드 + 720p 변환 + mp3 추출 + 1.5배속 을 한 번에
-python cli.py edit "https://youtu.be/XXXX" --quality 1080 --convert 720 --audio mp3 --speed 1.5
-
-# 이미 받은 로컬 파일 편집
-python cli.py trim    downloads/video.mp4 0:05 0:20
-python cli.py convert downloads/video.mp4 --quality 480 --format mp4
-python cli.py audio   downloads/video.mp4 --format mp3
-```
-
-결과물은 모두 `downloads/` 폴더에 저장됩니다.
+기본은 한국어 나레이션이 깔리지만, **지정한 "원음 유지 구간"에서는 영상 속
+인물의 원래 목소리**가 나오고 나레이션은 잠깐 줄어듭니다.
+(오디오 모드 = `부분더빙`, 구간 예: `0:12-0:18, 1:05-1:20`)
 
 ---
 
-## 편집 기능
+## 설치
 
-| 기능 | 설명 |
-|------|------|
-| **구간 자르기(trim)** | 시작~끝 시간을 지정해 원하는 부분만 추출. `--fast` 는 재인코딩 없이 빠르게(키프레임 단위) |
-| **화질/포맷 변환** | 1080p→720p 등 해상도 변경, mp4/webm/mkv 컨테이너 변환 |
-| **오디오 추출** | 영상에서 소리만 뽑아 mp3/m4a/wav 로 저장 |
-| **속도 조절** | 0.5배~2배 등 재생 속도 변경(영상+오디오 동기 유지) |
+```bash
+pip install -r requirements.txt        # yt-dlp, faster-whisper, (Flask)
+
+# ffmpeg 설치 (합성/자막 태우기에 필요)
+#   Ubuntu/Debian : sudo apt-get install ffmpeg fonts-nanum
+#   macOS         : brew install ffmpeg
+#   Windows       : https://ffmpeg.org/download.html
+
+# (선택) 원본 BGM 제거를 쓰려면
+#   pip install demucs
+```
+
+tkinter 가 있는 Python 3.10+ 필요 (일부 리눅스는 `sudo apt-get install python3-tk`).
+
+## 실행 — 데스크톱 앱 (권장)
+
+```bash
+python app_gui.py
+```
+
+창이 뜨면 위에서부터 1→6 순서대로 진행하세요. 3단계에서 복사된 프롬프트를
+Claude에 붙여 대본을 받고, 4단계 대본을 Vrew에 붙여 음성·자막을 뽑은 뒤,
+5·6단계로 최종 영상을 만듭니다.
+
+## 실행 — 웹 UI / CLI (단순 편집용)
+
+간단한 다운로드·자르기·변환·오디오 추출만 필요하면:
+
+```bash
+python webapp/app.py            # http://127.0.0.1:5000
+python cli.py edit "URL" --trim 0:10 1:30
+```
 
 ---
 
@@ -77,19 +66,31 @@ python cli.py audio   downloads/video.mp4 --format mp3
 
 ```
 .
-├── youtube_editor/       # 핵심 로직 (CLI·웹 공용)
-│   ├── downloader.py     #   yt-dlp 래퍼: 정보 조회 / 다운로드
-│   └── editor.py         #   ffmpeg 래퍼: 자르기 / 변환 / 오디오 / 속도
-├── cli.py                # 명령줄 인터페이스
-├── webapp/
-│   ├── app.py            # Flask 백엔드 (REST API)
-│   └── templates/index.html  # 웹 UI
-├── downloads/            # 결과물 저장 폴더
-└── requirements.txt
+├── app_gui.py               # ⭐ 자동편집기 데스크톱 GUI (6단계 워크플로우)
+├── youtube_editor/          # 핵심 로직 (GUI·웹·CLI 공용)
+│   ├── downloader.py        #   1단계: yt-dlp 다운로드/정보조회
+│   ├── transcriber.py       #   2단계: faster-whisper 원어 자막
+│   ├── script_tools.py      #   3·4단계: Claude 프롬프트 / Vrew 대본 정리
+│   ├── assembler.py         #   6단계: 나레이션·자막·출처·부분더빙 합성
+│   ├── srt_utils.py         #   SRT 파싱/생성, 자막 색 변환
+│   └── editor.py            #   단순 편집(자르기/변환/오디오/속도)
+├── webapp/                  # (부가) 웹 UI 버전
+├── cli.py                  # (부가) 명령줄 버전
+└── downloads/              # 결과물 저장 폴더
 ```
+
+## 동작 확인 (개발 환경 테스트 결과)
+
+- ✅ ffmpeg 합성 파이프라인(자막 태우기·오디오 믹싱·출처 워터마크)
+- ✅ **부분더빙**: 지정 구간에서 원음↔나레이션 전환을 주파수 측정으로 검증
+- ✅ SRT 생성/파싱, 자막 색(ASS) 변환, 대본 정리 로직
+- ✅ GUI 구성/렌더링 (스크린샷 확인)
+- ⚠️ 유튜브 다운로드·Whisper 음성인식은 실제 네트워크/모델이 필요해 사용자
+  환경에서 동작합니다 (개발 샌드박스에선 유튜브 접근이 차단됨).
 
 ## 참고 / 한계
 
-- 시간이 오래 걸리는 다운로드·인코딩은 완료될 때까지 기다려야 합니다(진행 표시 있음).
-- 유튜브 쪽 변경으로 다운로드가 막히면 `pip install -U yt-dlp` 로 최신화하세요.
-- 웹 UI는 로컬(개인 PC) 사용을 전제로 합니다. 외부 공개 시 인증/보안을 추가하세요.
+- Vrew(음성·자막 생성)와 Claude(대본 생성)는 원본 도구와 동일하게 **외부에서
+  수행**하고 파일/텍스트만 주고받습니다.
+- 유튜브 변경으로 다운로드가 막히면 `pip install -U yt-dlp` 로 최신화하세요.
+- Whisper 모델은 첫 실행 시 자동 다운로드됩니다(크기: small ≈ 460MB).
