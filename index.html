@@ -48,7 +48,7 @@
       border-radius: 999px;
       background: #f2c94c;
       color: #2a1a4a;
-      font-size: 27px;
+      font-size: clamp(20px, 6vw, 27px);
       font-weight: 800;
       text-decoration: none;
       box-shadow: 0 6px 18px rgba(0,0,0,0.3);
@@ -59,33 +59,20 @@
     /* leave room so last image isn't covered by sticky bar */
     .spacer { height: 118px; }
 
-    /* Final section rebuilt as HTML (editable schedule), sized to match image pages */
-    .final { background:#211145; color:#f3eee6; padding:70px 40px 80px; text-align:center; }
-    .final-title { font-size:48px; font-weight:800; line-height:1.35; color:#fff; letter-spacing:-.5px; text-wrap:balance; }
-    .final-sub { margin-top:30px; font-size:25px; line-height:1.7; color:#c9bfe0; }
-    .info { margin-top:48px; background:#2d1e52; border:1px solid rgba(255,255,255,.08); border-radius:22px; padding:10px 30px; text-align:left; }
-    .info .row { display:flex; align-items:center; gap:24px; padding:28px 6px; }
+    /* Final section rebuilt as HTML — centered stacked schedule, responsive fonts */
+    .final { background:#211145; color:#f3eee6; padding:70px 34px 80px; text-align:center; }
+    .final-title { font-size:clamp(31px,8.5vw,48px); font-weight:800; line-height:1.35; color:#fff; letter-spacing:-.5px; text-wrap:balance; }
+    .final-sub { margin-top:30px; font-size:clamp(19px,5vw,25px); line-height:1.7; color:#c9bfe0; }
+    .info { margin-top:46px; background:#2d1e52; border:1px solid rgba(255,255,255,.08); border-radius:22px; padding:14px 18px; text-align:center; }
+    .info .row { display:block; padding:26px 4px; }
     .info .row + .row { border-top:1px solid rgba(255,255,255,.09); }
-    .info .k { flex:0 0 80px; color:#e7b84d; font-weight:800; font-size:26px; white-space:nowrap; }
-    .info .v { color:#f3eee6; font-size:26px; line-height:1.55; }
-    .apply-btn { display:inline-block; margin-top:56px; padding:24px 52px; background:#e7b84d; color:#2a1a4a; font-size:27px; font-weight:800; border-radius:999px; text-decoration:none; }
+    .info .k { display:block; color:#e7b84d; font-weight:800; font-size:clamp(21px,5.6vw,26px); margin-bottom:12px; }
+    .info .v { display:block; color:#f3eee6; font-size:clamp(20px,5.4vw,26px); line-height:1.6; word-break:keep-all; }
+    .info .v.sched { white-space:nowrap; font-size:clamp(20px,6vw,28px); line-height:1.8; }
+    .apply-btn { display:inline-block; margin-top:54px; padding:24px 48px; background:#e7b84d; color:#2a1a4a; font-size:clamp(21px,6vw,27px); font-weight:800; border-radius:999px; text-decoration:none; }
     .apply-btn:active { transform:translateY(1px); }
-    .final-note { margin-top:48px; font-size:19px; line-height:1.7; color:#9a8fb5; }
-    .final-org { margin-top:30px; font-size:17px; color:#7d719c; }
-    @media (max-width:480px){
-      .final { padding:52px 24px 60px; }
-      .final-title { font-size:33px; letter-spacing:-1px; }
-      .final-sub { font-size:20px; }
-      .info { padding:6px 20px; }
-      .info .row { padding:24px 4px; gap:18px; }
-      .info .k, .info .v { font-size:21px; }
-      .info .k { flex-basis:66px; }
-      .apply-btn { padding:22px 40px; font-size:23px; }
-      .final-note { font-size:16px; }
-      .final-org { font-size:14px; }
-      .cta-bar a { font-size:24px; padding:24px 20px; }
-      .spacer { height:108px; }
-    }
+    .final-note { margin-top:48px; font-size:clamp(16px,4vw,19px); line-height:1.7; color:#9a8fb5; }
+    .final-org { margin-top:30px; font-size:clamp(13px,3.6vw,17px); color:#7d719c; }
   </style>
 </head>
 <body>
@@ -117,7 +104,7 @@
       <div class="info">
         <div class="row">
           <span class="k">일정</span>
-          <span class="v">1차 · 8월 17일(월) 저녁 8:00<br>2차 · 8월 20일(목) 저녁 8:00</span>
+          <span class="v sched">1차 · 8월 17일(월) 저녁 8:00<br>2차 · 8월 20일(목) 저녁 8:00</span>
         </div>
         <div class="row">
           <span class="k">장소</span>
