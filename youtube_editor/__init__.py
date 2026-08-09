@@ -25,7 +25,9 @@ from .tts import (
     TTSError,
     KO_VOICES,
 )
-from . import script_tools, srt_utils, tts
+from .scriptgen import generate_korean_script, ScriptGenError, DEFAULT_MODEL
+from .thumbnail import extract_candidates, make_thumbnail, ThumbnailError
+from . import script_tools, srt_utils, tts, scriptgen, thumbnail
 
 __all__ = [
     "Downloader", "VideoInfo", "DownloadError",
@@ -34,7 +36,9 @@ __all__ = [
     "AssembleOptions", "AssembleError", "SubStyle", "SourceMark", "build_video",
     "synthesize_script", "EdgeEngine", "CloneEngine", "ElevenLabsEngine",
     "TTSError", "KO_VOICES",
-    "script_tools", "srt_utils", "tts",
+    "generate_korean_script", "ScriptGenError", "DEFAULT_MODEL",
+    "extract_candidates", "make_thumbnail", "ThumbnailError",
+    "script_tools", "srt_utils", "tts", "scriptgen", "thumbnail",
 ]
 
 __version__ = "0.2.0"

@@ -25,6 +25,7 @@ from tkinter import colorchooser, filedialog, messagebox, ttk
 from youtube_editor import (
     AssembleOptions,
     CloneEngine,
+    DEFAULT_MODEL,
     Downloader,
     EdgeEngine,
     KO_VOICES,
@@ -32,6 +33,9 @@ from youtube_editor import (
     SubStyle,
     Transcriber,
     build_video,
+    extract_candidates,
+    generate_korean_script,
+    make_thumbnail,
     script_tools,
     synthesize_script,
 )
@@ -63,10 +67,12 @@ class AutoEditorApp:
         # ---- 상태 ----
         self.video_path: str | None = None
         self.channel_name: str = ""
+        self.video_title: str = ""
         self.orig_srt: str | None = None
         self.transcript = None
         self.wav_path: str | None = None
         self.srt_path: str | None = None
+        self.last_output: str | None = None
 
         self.downloader = Downloader(DOWNLOAD_DIR)
         self.log_q: queue.Queue[str] = queue.Queue()
@@ -168,11 +174,15 @@ class AutoEditorApp:
 
     # -------------------------------------------------------------- Step 3
     def _step3(self, p):
-        c = self._card(p, "3", "대본용 스크립트 뽑기")
+        c = self._card(p, "3", "한국어 대본 만들기")
         row = tk.Frame(c, bg=CARD)
         row.pack(fill="x", padx=14)
-        self._btn(row, "스크립트 뽑기", self.on_extract_script).pack(side="right")
-        self._hint(c, "자동 복사됨 → 클로드(대본생성기)에 붙여넣고 대본을 받아오세요")
+        # ⭐ 앱 안에서 Claude API 로 바로 대본 생성
+        self._btn(row, "🤖 대본 자동 생성(Claude)",
+                  self.on_generate_script).pack(side="right")
+        self._btn(row, "스크립트 복사(수동)", self.on_extract_script,
+                  primary=False).pack(side="right", padx=6)
+        self._hint(c, "‘자동 생성’: Claude API로 한국어 대본을 만들어 4단계에 바로 채웁니다 (설정에 API 키 필요)  ·  또는 복사해 클로드에 직접 붙여넣어도 됨")
 
     # -------------------------------------------------------------- Step 4
     def _step4(self, p):
@@ -215,6 +225,8 @@ class AutoEditorApp:
                       activebackground=BLUE_DARK, activeforeground="white",
                       relief="flat", bd=0, pady=14, cursor="hand2")
         b.pack(fill="x", pady=(10, 4))
+        self._btn(p, "🖼 썸네일만 따로 뽑기", self.on_make_thumbnail,
+                  primary=False).pack(fill="x", pady=(0, 4))
 
     # ------------------------------------------------------------ 설정 패널
     def _settings(self, p):
@@ -321,6 +333,38 @@ class AutoEditorApp:
                  bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
                  anchor="w").pack(fill="x", padx=14)
 
+        # ---- 대본 자동 생성 (Claude API) ----
+        tk.Frame(sp, bg=LINE, height=1).pack(fill="x", padx=14, pady=(8, 4))
+        tk.Label(sp, text="🤖 대본 자동 생성 (Claude)", bg=CARD, fg=BLUE,
+                 font=FONT_B, anchor="w").pack(fill="x", padx=14)
+        r = field(sp, "API 키")
+        self.api_key = tk.StringVar(value=os.environ.get("ANTHROPIC_API_KEY", ""))
+        tk.Entry(r, textvariable=self.api_key, font=FONT, show="•", relief="solid",
+                 bd=1).pack(side="left", fill="x", expand=True)
+        r = field(sp, "모델")
+        self.api_model = tk.StringVar(value=DEFAULT_MODEL)
+        tk.Entry(r, textvariable=self.api_model, font=FONT, relief="solid",
+                 bd=1).pack(side="left", fill="x", expand=True)
+        tk.Label(sp, text="       환경변수 ANTHROPIC_API_KEY 가 있으면 비워둬도 됩니다",
+                 bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 anchor="w").pack(fill="x", padx=14)
+
+        # ---- 썸네일 ----
+        tk.Frame(sp, bg=LINE, height=1).pack(fill="x", padx=14, pady=(8, 4))
+        tk.Label(sp, text="🖼 썸네일", bg=CARD, fg=BLUE, font=FONT_B,
+                 anchor="w").pack(fill="x", padx=14)
+        r = field(sp, "완성 후 생성")
+        self.auto_thumb = tk.BooleanVar(value=True)
+        tk.Checkbutton(r, text="영상 완성 시 썸네일·대표프레임 자동 생성",
+                       variable=self.auto_thumb, bg=CARD, font=FONT).pack(side="left")
+        r = field(sp, "썸네일 제목")
+        self.thumb_title = tk.StringVar(value="")
+        tk.Entry(r, textvariable=self.thumb_title, font=FONT, relief="solid",
+                 bd=1).pack(side="left", fill="x", expand=True)
+        tk.Label(sp, text="       비우면 영상 제목을 사용합니다",
+                 bg=CARD, fg=MUTED, font=("Malgun Gothic", 8),
+                 anchor="w").pack(fill="x", padx=14)
+
         tk.Frame(sp, bg=LINE, height=1).pack(fill="x", padx=14, pady=(8, 4))
         r = field(sp, "기타")
         self.remove_bgm = tk.BooleanVar(value=False)
@@ -400,6 +444,7 @@ class AutoEditorApp:
             try:
                 info = self.downloader.get_info(url)
                 self.channel_name = info.uploader
+                self.video_title = info.title
                 self.log_msg(f"    제목: {info.title} / {info.duration_str}")
             except Exception as exc:  # noqa: BLE001
                 self.log_msg(f"    (정보 조회 건너뜀: {exc})")
@@ -449,6 +494,41 @@ class AutoEditorApp:
             f.write(prompt)
         self.log_msg("[+] 대본용 스크립트 자동 복사됨 → 클로드(대본생성기)에 붙여넣으세요")
         self.log_msg(f"    (백업 저장: {os.path.basename(path)})")
+
+    def on_generate_script(self):
+        if not self.transcript:
+            messagebox.showwarning("알림", "먼저 2단계(자막 만들기)를 완료하세요.")
+            return
+        key = self.api_key.get().strip() or None
+        model = self.api_model.get().strip() or DEFAULT_MODEL
+        self.log_msg("─" * 40)
+        self.log_msg("[3] Claude로 한국어 대본 생성 중...")
+
+        def work():
+            script = generate_korean_script(
+                self.transcript.to_text(), title=self.video_title,
+                model=model, api_key=key, log=self.log_msg)
+            # 4단계 텍스트박스에 채워넣기
+            self.script_text.delete("1.0", "end")
+            self.script_text.insert("1.0", script)
+            n = len([x for x in script.split("\n") if x.strip()])
+            self.log_msg(f"✔ 대본 {n}문장 생성 → 4단계에 채웠습니다. 이제 [음성·자막 자동 생성]으로 진행하세요")
+        self._run_bg(work)
+
+    def on_make_thumbnail(self):
+        video = self.last_output or self.video_path
+        if not video or not os.path.exists(video):
+            messagebox.showwarning("알림", "먼저 영상을 만들거나 불러오세요.")
+            return
+        self._run_bg(lambda: self._do_thumbnail(video))
+
+    def _do_thumbnail(self, video: str):
+        title = self.thumb_title.get().strip() or self.video_title
+        self.log_msg("🖼 썸네일 생성 중...")
+        extract_candidates(video, DOWNLOAD_DIR, count=5, log=self.log_msg)
+        out = os.path.join(DOWNLOAD_DIR, "thumbnail.jpg")
+        make_thumbnail(video, out, title=title, log=self.log_msg)
+        self.log_msg(f"✔ 썸네일: {out}  (대표 프레임 후보: thumb_cand_1~5.jpg)")
 
     def on_make_voice_script(self):
         script = self.script_text.get("1.0", "end").strip()
@@ -556,7 +636,13 @@ class AutoEditorApp:
         def work():
             result = build_video(self.video_path, self.wav_path, srt, out, opt,
                                  log=self.log_msg)
+            self.last_output = result
             self.log_msg(f"🎉 완성! → {result}")
+            if self.auto_thumb.get():
+                try:
+                    self._do_thumbnail(result)
+                except Exception as exc:  # noqa: BLE001
+                    self.log_msg(f"  · 썸네일 생성 건너뜀: {exc}")
             messagebox.showinfo("완성", f"영상이 만들어졌어요:\n{result}")
         self._run_bg(work)
 
