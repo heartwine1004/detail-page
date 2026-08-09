@@ -26,10 +26,16 @@
       height: auto;
       border: 0;
     }
-    /* Date badge overlaid on page-2, just above the CTA button */
-    .p2 { position: relative; line-height: 0; }
-    .p2 .p2-date { position: absolute; left: 0; right: 0; top: 70%; transform: translateY(-50%); text-align: center; line-height: 1; padding: 0 16px; }
-    .p2 .p2-date span { display: inline-block; background: rgba(242,201,76,.16); border: 1.5px solid rgba(242,201,76,.7); color: #f7d774; padding: 8px 18px; border-radius: 999px; font-size: clamp(14px,3.6vw,20px); font-weight: 800; letter-spacing: -.3px; white-space: nowrap; }
+    /* Page-2 lower CTA block rebuilt as HTML (schedule + button) */
+    .p2 { background:#211145; }
+    .p2b { background:#211145; color:#fff; text-align:center; padding:6px 20px 56px; }
+    .p2-badge { font-size:clamp(19px,5.2vw,25px); font-weight:800; color:#e9e4f4; word-break:keep-all; }
+    .p2-badge .dot { display:inline-block; width:.5em; height:.5em; border-radius:50%; background:#5fd08a; margin-right:.45em; vertical-align:middle; }
+    .p2-date { margin-top:26px; font-weight:800; color:#ffd76a; font-size:clamp(26px,7.6vw,44px); line-height:1.45; letter-spacing:-.5px; }
+    .p2-date span { display:block; white-space:nowrap; }
+    .p2-btn { display:inline-block; margin-top:32px; padding:22px 46px; background:#e7b84d; color:#2a1a4a; font-size:clamp(20px,5.6vw,26px); font-weight:800; border-radius:999px; text-decoration:none; }
+    .p2-btn:active { transform:translateY(1px); }
+    .p2-foot { margin-top:28px; font-size:clamp(13px,3.4vw,16px); color:#8a7fa8; }
     /* Sticky bottom CTA */
     .cta-bar {
       position: fixed;
@@ -83,8 +89,13 @@
   <main class="page">
     <img src="assets/page-01.png" alt="AI 시대, 명상·웰니스 전문가를 위한 무료특강" loading="eager" width="1080" height="1920">
     <div class="p2">
-      <img src="assets/page-02.png" alt="브랜딩과 콘텐츠의 핵심을 무료로 공개합니다 · 100% 무료 온라인 라이브 특강" loading="lazy" width="1080" height="1920">
-      <div class="p2-date"><span>1차 8/17(월) · 2차 8/20(목) 저녁 8시</span></div>
+      <img src="assets/page-02-top.png" alt="브랜딩과 콘텐츠의 핵심을, 아끼지 않고 무료로 공개합니다" loading="lazy" width="1080" height="979">
+      <div class="p2b">
+        <p class="p2-badge"><span class="dot"></span>100% 무료 · 온라인 라이브 특강</p>
+        <p class="p2-date"><span>1차 8/17(월) 저녁 8시</span><span>2차 8/20(목) 저녁 8시</span></p>
+        <a class="p2-btn" href="https://forms.gle/dntoauraEBkjvkWbA" target="_blank" rel="noopener">무료로 신청하기 &nbsp;→</a>
+        <p class="p2-foot">사전 신청자에게만 참여 링크를 보내드립니다</p>
+      </div>
     </div>
     <img src="assets/page-03.png" alt="혹시 이런 생각 하고 계시진 않았나요?" loading="lazy" width="1080" height="1920">
     <img src="assets/page-04.png" alt="사실, 문제는 실력이 아닙니다" loading="lazy" width="1080" height="1920">
