@@ -147,6 +147,18 @@ def _remove_music(src_wav: str, log: ProgressCb) -> str:
     return src_wav
 
 
+def _dur(path: str) -> float:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=nw=1:nk=1", path],
+        capture_output=True, text=True,
+    )
+    try:
+        return float(out.stdout.strip())
+    except ValueError:
+        return 0.0
+
+
 def _extract_original_audio(video_path: str, dst: str) -> str:
     subprocess.run(
         ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
@@ -233,6 +245,15 @@ def build_video(
     # 비디오 필터
     vfilter = _build_video_filter(srt_path, opt, log)
 
+    # 나레이션이 원본 영상보다 길면 마지막 프레임을 정지시켜 영상을 늘린다
+    # (그래야 나레이션·자막이 잘리지 않는다).
+    vdur, adur = _dur(video_path), _dur(wav_path)
+    if adur > vdur + 0.05:
+        pad = adur - vdur
+        log(f"  · 나레이션이 {pad:.1f}초 더 길어 영상 끝 프레임을 늘립니다")
+        tpad = f"tpad=stop_mode=clone:stop_duration={pad:.3f}"
+        vfilter = f"{vfilter},{tpad}" if vfilter else tpad
+
     filter_parts = list(afilters)
     if vfilter:
         filter_parts.append(f"[0:v]{vfilter}[vout]")
@@ -244,7 +265,7 @@ def build_video(
         cmd += ["-filter_complex", ";".join(filter_parts)]
     cmd += ["-map", video_map, "-map", audio_map]
     cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
-            "-c:a", "aac", "-b:a", "192k", "-shortest", output]
+            "-c:a", "aac", "-b:a", "192k", output]
 
     _run(cmd, log)
     log(f"완성 → {output}")
