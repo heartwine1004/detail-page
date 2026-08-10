@@ -1,0 +1,8 @@
+node_modules/
+package-lock.json
+package.json
+netlify-dist/
+blog-images/
+detail-page-blog-images.zip
+cardnews/
+cardnews-instagram.zip

@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0e0722; font-family:"Noto Sans CJK KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif; }
+  .deck { display:flex; flex-direction:column; align-items:center; gap:28px; padding:28px; }
+  .card {
+    position:relative; width:1080px; height:1350px; overflow:hidden;
+    background:radial-gradient(120% 80% at 50% -10%, #3a1f6e 0%, #241250 45%, #1a0e3a 100%);
+    color:#fff; padding:96px 90px; display:flex; flex-direction:column;
+  }
+  .card::after{ /* subtle top glow */
+    content:""; position:absolute; top:-160px; right:-120px; width:520px; height:520px;
+    background:radial-gradient(circle, rgba(240,198,90,.18), rgba(240,198,90,0) 70%); pointer-events:none;
+  }
+  .pg { position:absolute; top:54px; right:70px; font-size:30px; font-weight:800; color:rgba(255,255,255,.45); letter-spacing:1px; }
+  .brand { position:absolute; left:90px; bottom:56px; font-size:28px; font-weight:700; color:rgba(255,255,255,.5); letter-spacing:.5px; }
+  .eyebrow { font-size:36px; font-weight:800; color:#f0c65a; letter-spacing:1px; margin-bottom:26px; }
+  h1 { font-size:104px; font-weight:900; line-height:1.22; letter-spacing:-2px; }
+  h2 { font-size:70px; font-weight:900; line-height:1.32; letter-spacing:-1.5px; }
+  .lead { font-size:44px; font-weight:500; line-height:1.6; color:#d9cfef; }
+  .lead b { color:#fff; font-weight:800; }
+  .gold { color:#f0c65a; }
+  .spacer { flex:1; }
+
+  /* cover */
+  .pill { display:inline-block; align-self:flex-start; background:rgba(240,198,90,.14); border:2px solid rgba(240,198,90,.7);
+    color:#f6d878; font-size:40px; font-weight:800; padding:20px 34px; border-radius:999px; letter-spacing:-.5px; }
+  .free { font-size:40px; font-weight:800; color:#e9e4f4; margin-top:30px; }
+  .free .dot{ display:inline-block; width:20px; height:20px; border-radius:50%; background:#5fd08a; margin-right:14px; vertical-align:middle; }
+  .swipe { position:absolute; right:90px; bottom:54px; font-size:34px; font-weight:800; color:#f0c65a; }
+
+  /* checklist */
+  ul.chk { list-style:none; display:flex; flex-direction:column; gap:34px; margin-top:16px; }
+  ul.chk li { font-size:46px; font-weight:600; line-height:1.4; color:#eee6ff; padding-left:78px; position:relative; }
+  ul.chk li::before { content:"✔"; position:absolute; left:0; top:2px; color:#f0c65a; font-size:46px; font-weight:900; }
+
+  /* numbered */
+  ol.num { list-style:none; display:flex; flex-direction:column; gap:40px; margin-top:14px; counter-reset:n; }
+  ol.num li { position:relative; padding-left:118px; counter-increment:n; }
+  ol.num li::before { content:"0" counter(n); position:absolute; left:0; top:-4px; font-size:52px; font-weight:900; color:#f0c65a; }
+  ol.num .t { font-size:50px; font-weight:800; color:#fff; line-height:1.25; }
+  ol.num .d { font-size:38px; font-weight:500; color:#c9bde8; line-height:1.4; margin-top:8px; }
+
+  /* facts */
+  ul.facts { list-style:none; display:flex; flex-direction:column; gap:30px; margin-top:20px; }
+  ul.facts li { font-size:44px; font-weight:600; color:#eee6ff; padding-left:60px; position:relative; line-height:1.35; }
+  ul.facts li::before { content:""; position:absolute; left:0; top:20px; width:26px; height:26px; border-radius:50%; border:6px solid #f0c65a; }
+
+  /* results */
+  .res { display:flex; flex-direction:column; gap:34px; margin-top:14px; }
+  .res .item { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:26px; padding:38px 40px; }
+  .res .big { font-size:52px; font-weight:900; color:#f0c65a; line-height:1.2; }
+  .res .sub { font-size:38px; font-weight:600; color:#e4dcf6; margin-top:10px; line-height:1.35; }
+
+  /* CTA info */
+  .info { display:flex; flex-direction:column; gap:30px; margin-top:14px; }
+  .info .row { display:flex; gap:28px; align-items:baseline; }
+  .info .k { flex:0 0 150px; font-size:40px; font-weight:800; color:#f0c65a; }
+  .info .v { font-size:42px; font-weight:600; color:#f2ecff; line-height:1.35; }
+  .cta { margin-top:auto; }
+  .cta .btn { display:block; text-align:center; background:#f0c65a; color:#241250; font-size:52px; font-weight:900;
+    padding:36px; border-radius:999px; letter-spacing:-1px; }
+  .cta .note { text-align:center; font-size:34px; color:#b7aad6; margin-top:26px; }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1 COVER -->
+  <section class="card">
+    <span class="pg">1 / 8</span>
+    <div class="eyebrow">명상 · 상담 · 코칭 · 요가 전문가를 위한</div>
+    <h1>AI 시대<br><span class="gold">무료 특강</span></h1>
+    <div class="spacer"></div>
+    <span class="pill">1차 8/17(월) · 2차 8/20(목) 저녁 8시</span>
+    <div class="free"><span class="dot"></span>100% 무료 · 온라인 라이브</div>
+    <span class="swipe">넘겨보세요 →</span>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 2 EMPATHY -->
+  <section class="card">
+    <span class="pg">2 / 8</span>
+    <div class="eyebrow">혹시, 이런 생각 하고 계신가요?</div>
+    <ul class="chk">
+      <li>수업 만족도는 높은데, 새 기수 모집은 늘 어렵다</li>
+      <li>SNS를 해야 한다는데, 뭐부터 할지 막막하다</li>
+      <li>내 이름을 검색해도, 나오는 게 거의 없다</li>
+      <li>좋아하는 일 하면서, 살림도 편안해지고 싶다</li>
+    </ul>
+    <div class="spacer"></div>
+    <p class="lead">하나라도 끄덕였다면, <b>이 특강은 당신을 위한 자리</b>입니다.</p>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 3 PROBLEM -->
+  <section class="card">
+    <span class="pg">3 / 8</span>
+    <div class="eyebrow">사실은</div>
+    <h2>문제는<br><span class="gold">‘실력’이 아닙니다</span></h2>
+    <div class="spacer"></div>
+    <p class="lead">당신은 이미 충분한 전문성을 가지고 있습니다.<br><br>다만 아직, 당신을 <b>발견할 ‘등대’</b>가 만들어지지 않았을 뿐입니다.</p>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 4 BRAND -->
+  <section class="card">
+    <span class="pg">4 / 8</span>
+    <div class="eyebrow">브랜드란?</div>
+    <h2>사람들이 당신을<br><span class="gold">신뢰하는 이유</span></h2>
+    <div class="spacer"></div>
+    <p class="lead">사람들은 ‘가장 잘 가르치는 사람’이 아니라<br><b>‘가장 먼저 떠오르는 사람’</b>을 선택합니다.<br><br>그 신뢰는 콘텐츠를 통해 조금씩 쌓입니다.</p>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 5 CURRICULUM -->
+  <section class="card">
+    <span class="pg">5 / 8</span>
+    <div class="eyebrow">이 특강에서 배우는 4가지</div>
+    <ol class="num">
+      <li><div class="t">검색되는 전문가 되기</div><div class="d">어떤 채널부터, 어떻게 시작할지</div></li>
+      <li><div class="t">나만의 브랜드 설계</div><div class="d">내 철학·강점에서 출발하는 메시지</div></li>
+      <li><div class="t">AI를 콘텐츠 비서로</div><div class="d">글 하나를 인스타·스레드까지 확장</div></li>
+      <li><div class="t">신뢰 → 고객 연결</div><div class="d">상담·클래스 신청으로 이어지는 동선</div></li>
+    </ol>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 6 INSTRUCTOR -->
+  <section class="card">
+    <span class="pg">6 / 8</span>
+    <div class="eyebrow">강사 · 명상하는 마케터 스리아</div>
+    <h2 style="font-size:58px">국내 유일 명상전문신문사<br><span class="gold">힐링뉴스 발행인</span></h2>
+    <ul class="facts">
+      <li>1,000명+ 수강생을 직접 교육한 실전 교육자</li>
+      <li>200여 개 브랜드 마케팅·브랜딩 자문</li>
+      <li>정보통신산업진흥원(NIPA) 현직 전문평가위원</li>
+      <li>저서 다수 출간 · 국가 등록 연구자</li>
+    </ul>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 7 RESULTS -->
+  <section class="card">
+    <span class="pg">7 / 8</span>
+    <div class="eyebrow">먼저 시작한 분들의 변화</div>
+    <div class="res">
+      <div class="item"><div class="big">월 300~600만 원</div><div class="sub">공공기관 강의 신청을 꾸준히 받는 강사님</div></div>
+      <div class="item"><div class="big">책 출판 · 전국 강의</div><div class="sub">블로그로 시작한 아이 셋 엄마</div></div>
+      <div class="item"><div class="big">주문이 밀려드는</div><div class="sub">매일 글 쓰는 것만으로 성장한 대표님</div></div>
+    </div>
+    <span class="brand">힐링뉴스 × MEDI.H</span>
+  </section>
+
+  <!-- 8 CTA -->
+  <section class="card">
+    <span class="pg">8 / 8</span>
+    <div class="eyebrow">이제, 당신 차례입니다</div>
+    <h2>실력이 제대로<br><span class="gold">알려질 시간</span></h2>
+    <div class="info">
+      <div class="row"><span class="k">일정</span><span class="v">1차 8/17(월) · 2차 8/20(목) 저녁 8시</span></div>
+      <div class="row"><span class="k">장소</span><span class="v">온라인 줌(ZOOM) 라이브</span></div>
+      <div class="row"><span class="k">대상</span><span class="v">명상·상담·코칭·요가 등 웰니스 전문가</span></div>
+      <div class="row"><span class="k">수강료</span><span class="v">무료 · 선착순 한정</span></div>
+    </div>
+    <div class="cta">
+      <span class="btn">프로필 링크에서 무료 신청 →</span>
+      <div class="note">사전 신청자에게만 참여 링크를 보내드립니다</div>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
