@@ -1,0 +1,13 @@
+{
+  "name": "hanjul-branding-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "한줄 브랜딩 — 수강기간 동안만 접속해 쓰는 브랜딩 도구 웹앱 (프로토타입)",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,23 @@
+[
+  {
+    "email": "student@example.com",
+    "name": "김수강",
+    "expiresAt": "2026-12-31",
+    "limit": 100,
+    "used": 0
+  },
+  {
+    "email": "vip@example.com",
+    "name": "이브이피",
+    "expiresAt": "2027-06-30",
+    "limit": 0,
+    "used": 0
+  },
+  {
+    "email": "expired@example.com",
+    "name": "박만료",
+    "expiresAt": "2026-08-01",
+    "limit": 100,
+    "used": 12
+  }
+]

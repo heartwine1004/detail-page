@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>한줄 브랜딩</title>
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- ── 로그인 화면 ── -->
+  <section id="login-view" class="view">
+    <div class="login-card">
+      <div class="emblem" aria-hidden="true">
+        <svg viewBox="0 0 74 74" fill="none">
+          <circle cx="37" cy="37" r="33" stroke="#D2AB4F" stroke-width="1.2" opacity=".5"/>
+          <path d="M37 10 L40.5 33.5 L64 37 L40.5 40.5 L37 64 L33.5 40.5 L10 37 L33.5 33.5 Z" fill="#E4C579"/>
+        </svg>
+      </div>
+      <p class="kicker">The Branding System</p>
+      <h1>한줄 브랜딩</h1>
+      <p class="sub">말주변 없어도, 브랜드는 잡힙니다.</p>
+      <form id="login-form">
+        <label for="email">수강생 이메일</label>
+        <input id="email" type="email" inputmode="email" autocomplete="email"
+               placeholder="라이브클래스 수강신청 이메일" required />
+        <button type="submit" id="login-btn">입장하기</button>
+        <p id="login-msg" class="msg" role="alert"></p>
+      </form>
+      <p class="hint">라이브클래스에서 수강신청한 이메일로만 입장할 수 있어요.<br>수강기간 동안만 이용 가능합니다.</p>
+    </div>
+  </section>
+
+  <!-- ── 채팅 화면 ── -->
+  <section id="chat-view" class="view hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot" aria-hidden="true"></span>
+        <b>한줄 브랜딩</b>
+      </div>
+      <div class="meta">
+        <span id="period" class="pill"></span>
+        <span id="usage" class="pill"></span>
+        <button id="export-btn" class="ghost" title="지금까지의 브랜드 결과를 파일로 저장">Brand Core 내보내기</button>
+        <button id="logout-btn" class="ghost">나가기</button>
+      </div>
+    </header>
+
+    <main id="messages" class="messages" aria-live="polite"></main>
+
+    <form id="chat-form" class="composer">
+      <textarea id="input" rows="1" placeholder="예) 나, 명상 클래스 팔아 — 한마디만 툭 던져보세요" required></textarea>
+      <button type="submit" id="send-btn" aria-label="보내기">보내기</button>
+    </form>
+    <p id="mock-note" class="mock-note hidden">데모 모드 · 실제 API 키를 연결하면 진짜 코칭이 시작됩니다.</p>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
